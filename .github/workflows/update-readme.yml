@@ -1,0 +1,37 @@
+name: Update Org README Daily
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # every day at midnight UTC
+  workflow_dispatch:
+
+jobs:
+  update-readme:
+    runs-on: [self-hosted]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Update README
+        run: |
+          node -e "
+          const fs = require('fs');
+          const jokes = JSON.parse(fs.readFileSync('jokes.json'));
+          const joke = jokes[Math.floor(Math.random() * jokes.length)];
+          let readme = fs.readFileSync('README.md', 'utf8');
+          readme = readme.replace(/{{JOKE_OF_THE_DAY}}/, joke);
+          fs.writeFileSync('README.md', readme);
+          "
+
+      - name: Commit & Push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          git commit -m "Update joke of the day" || echo "No changes to commit"
+          git push
